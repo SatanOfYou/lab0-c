@@ -25,7 +25,7 @@ struct list_head *q_new()
 /* Free all storage used by queue */
 void q_free(struct list_head *l)
 {
-    if (!l || list_empty(l))
+    if (!l)
         return;
     element_t *pos, *n;
     list_for_each_entry_safe (pos, n, l, list) {
@@ -206,8 +206,91 @@ void q_reverseK(struct list_head *head, int k)
     }
 }
 
+struct list_head *mergeTwoSingleList(struct list_head *list1,
+                                     struct list_head *list2,
+                                     int descend)
+{
+    struct list_head head, *iter = &head;
+    while (list1 && list2) {
+        int diff = strcmp(list_entry(list1, element_t, list)->value,
+                          list_entry(list2, element_t, list)->value);
+        if ((descend && diff < 0) || (!descend && diff > 0)) {
+            iter->next = list2;
+            list2 = list2->next;
+        } else {
+            iter->next = list1;
+            list1 = list1->next;
+        }
+        iter = iter->next;
+    }
+    iter->next = (list1 ? list1 : list2);
+    return head.next;
+}
+
+struct list_head *merge_final(struct list_head *head,
+                              struct list_head *list1,
+                              struct list_head *list2,
+                              int descend)
+{
+    struct list_head *target;
+    INIT_LIST_HEAD(head);
+    while (list1 && list2) {
+        int diff = strcmp(list_entry(list1, element_t, list)->value,
+                          list_entry(list2, element_t, list)->value);
+        if ((descend && diff < 0) || (!descend && diff > 0)) {
+            target = list2;
+            list2 = list2->next;
+        } else {
+            target = list1;
+            list1 = list1->next;
+        }
+        list_add_tail(target, head);
+    }
+    list1 = (list1 ? list1 : list2);
+    while (list1) {
+        target = list1;
+        list1 = list1->next;
+        list_add_tail(target, head);
+    }
+    return head;
+}
 /* Sort elements of queue in ascending/descending order */
-void q_sort(struct list_head *head, bool descend) {}
+void q_sort(struct list_head *head, bool descend)
+{
+    if (!head || list_empty(head) || list_is_singular(head))
+        return;
+    int count = 0, temp;
+    struct list_head *pending = NULL, *final_head = head;
+    head->prev->next = NULL;
+    head = head->next;
+
+    do {
+        struct list_head **tail;
+        for (temp = count, tail = &pending; temp & 1; temp >>= 1)
+            tail = &(*tail)->prev;
+        if (temp) {
+            struct list_head *list1 = pending, *list2 = pending->prev;
+            list1 = mergeTwoSingleList(list1, list2, descend);
+            list1->prev = list2->prev;
+            *tail = list1;
+        }
+        head->prev = pending;
+        pending = head;
+        head = head->next;
+        pending->next = NULL;
+        count++;
+    } while (head);
+    struct list_head *list = pending;
+    pending = pending->prev;
+    while (true) {
+        struct list_head *next = pending->prev;
+        if (!next)
+            break;
+        list = mergeTwoSingleList(list, pending, descend);
+        pending = next;
+    }
+    merge_final(final_head, pending, list, descend);
+}
 
 /* Remove every node which has a node with a strictly less value anywhere to
  * the right side of it */
@@ -255,6 +338,24 @@ int q_descend(struct list_head *head)
  * order */
 int q_merge(struct list_head *head, bool descend)
 {
-    // https://leetcode.com/problems/merge-k-sorted-lists/
-    return 0;
+    if (!head || list_empty(head))
+        return 0;
+    if (list_is_singular(head))
+        return list_first_entry(head, queue_contex_t, chain)->size;
+    struct list_head *curr = head->next;
+    list_del(curr);
+    int result = q_merge(head, descend);
+    queue_contex_t *queue1 = list_entry(curr, queue_contex_t, chain);
+    queue_contex_t *queue2 = list_entry(head->next, queue_contex_t, chain);
+    result += queue1->size;
+    if (!queue2->q && !list_empty(queue2->q)) {
+        queue1->q->prev->next = NULL;
+        queue2->q->prev->next = NULL;
+        queue2->size = 0;
+        merge_final(queue1->q, queue1->q->next, queue2->q->next, descend);
+        INIT_LIST_HEAD(queue2->q);
+        queue1->size = result;
+    }
+    list_add(curr, head);
+    return result;
 }
