@@ -45,6 +45,10 @@ bool q_insert_head(struct list_head *head, char *s)
     if (!elem)
         return false;
     elem->value = (char *) malloc(strlen(s) + 1);
+    if (!elem->value) {
+        free(elem);
+        return false;
+    }
     strncpy(elem->value, s, strlen(s) + 1);
     list_add(&elem->list, head);
     return true;
@@ -59,6 +63,10 @@ bool q_insert_tail(struct list_head *head, char *s)
     if (!elem)
         return false;
     elem->value = (char *) malloc(strlen(s) + 1);
+    if (!elem->value) {
+        free(elem);
+        return false;
+    }
     strncpy(elem->value, s, strlen(s) + 1);
     list_add_tail(&elem->list, head);
     return true;
@@ -348,7 +356,7 @@ int q_merge(struct list_head *head, bool descend)
     queue_contex_t *queue1 = list_entry(curr, queue_contex_t, chain);
     queue_contex_t *queue2 = list_entry(head->next, queue_contex_t, chain);
     result += queue1->size;
-    if (!queue2->q && !list_empty(queue2->q)) {
+    if (queue2->q && (!list_empty(queue2->q))) {
         queue1->q->prev->next = NULL;
         queue2->q->prev->next = NULL;
         queue2->size = 0;
