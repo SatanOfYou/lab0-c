@@ -50,6 +50,7 @@ bool q_insert_head(struct list_head *head, char *s)
         return false;
     }
     strncpy(elem->value, s, strlen(s) + 1);
+    elem->value[strlen(s)] = '\0';
     list_add(&elem->list, head);
     return true;
 }
@@ -68,6 +69,7 @@ bool q_insert_tail(struct list_head *head, char *s)
         return false;
     }
     strncpy(elem->value, s, strlen(s) + 1);
+    elem->value[strlen(s)] = '\0';
     list_add_tail(&elem->list, head);
     return true;
 }
@@ -78,9 +80,11 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
     if (!head || list_empty(head))
         return NULL;
     element_t *elem = list_first_entry(head, element_t, list);
+    if (sp)
+        memset(sp, 0, bufsize);
     if (sp && (bufsize > 1))
         strncpy(sp, elem->value, bufsize - 1);
-    list_del(head->next);
+    list_del_init(head->next);
     return elem;
 }
 
@@ -90,9 +94,11 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
     if (!head || list_empty(head))
         return NULL;
     element_t *elem = list_last_entry(head, element_t, list);
+    if (sp)
+        memset(sp, 0, bufsize);
     if (sp && (bufsize > 1))
         strncpy(sp, elem->value, bufsize - 1);
-    list_del(head->prev);
+    list_del_init(head->prev);
     return elem;
 }
 
@@ -147,6 +153,11 @@ bool q_delete_dup(struct list_head *head)
         if (flag ^ equal)
             flag = !flag;
         target = temp;
+    }
+    if (flag) {
+        list_del(target);
+        free(list_entry(target, element_t, list)->value);
+        free(list_entry(target, element_t, list));
     }
     return true;
 }
@@ -277,8 +288,8 @@ void q_sort(struct list_head *head, bool descend)
         for (temp = count, tail = &pending; temp & 1; temp >>= 1)
             tail = &(*tail)->prev;
         if (temp) {
-            struct list_head *list1 = pending, *list2 = pending->prev;
-            list1 = mergeTwoSingleList(list1, list2, descend);
+            struct list_head *list1 = *tail, *list2 = (*tail)->prev;
+            list1 = mergeTwoSingleList(list2, list1, descend);
             list1->prev = list2->prev;
             *tail = list1;
         }
@@ -317,6 +328,9 @@ int q_ascend(struct list_head *head)
             0) {
         result++;
         list_add(node, head);
+    } else {
+        free(list_entry(node, element_t, list)->value);
+        free(list_entry(node, element_t, list));
     }
     return result;
 }
@@ -338,6 +352,9 @@ int q_descend(struct list_head *head)
             0) {
         result++;
         list_add(node, head);
+    } else {
+        free(list_entry(node, element_t, list)->value);
+        free(list_entry(node, element_t, list));
     }
     return result;
 }
