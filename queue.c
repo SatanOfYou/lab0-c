@@ -39,18 +39,21 @@ void q_free(struct list_head *l)
 /* Insert an element at head of queue */
 bool q_insert_head(struct list_head *head, char *s)
 {
-    if (!head || !s || (*s == '\0'))
+    if (!head || !s)
         return false;
     element_t *elem = (element_t *) malloc(sizeof(element_t));
     if (!elem)
         return false;
-    elem->value = (char *) malloc(strlen(s) + 1);
+    int length = 0;
+    while (*(s + length))
+        length++;
+    elem->value = (char *) malloc(length + 1);
     if (!elem->value) {
         free(elem);
         return false;
     }
-    strncpy(elem->value, s, strlen(s) + 1);
-    elem->value[strlen(s)] = '\0';
+    strncpy(elem->value, s, length + 1);
+    elem->value[length] = '\0';
     list_add(&elem->list, head);
     return true;
 }
@@ -58,18 +61,21 @@ bool q_insert_head(struct list_head *head, char *s)
 /* Insert an element at tail of queue */
 bool q_insert_tail(struct list_head *head, char *s)
 {
-    if (!head || !s || (*s == '\0'))
+    if (!head || !s)
         return false;
     element_t *elem = (element_t *) malloc(sizeof(element_t));
     if (!elem)
         return false;
-    elem->value = (char *) malloc(strlen(s) + 1);
+    int length = 0;
+    while (*(s + length))
+        length++;
+    elem->value = (char *) malloc(length + 1);
     if (!elem->value) {
         free(elem);
         return false;
     }
-    strncpy(elem->value, s, strlen(s) + 1);
-    elem->value[strlen(s)] = '\0';
+    strncpy(elem->value, s, length);
+    elem->value[length] = '\0';
     list_add_tail(&elem->list, head);
     return true;
 }
@@ -80,7 +86,7 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
     if (!head || list_empty(head))
         return NULL;
     element_t *elem = list_first_entry(head, element_t, list);
-    if (sp && (bufsize > 1)) {
+    if (sp && (bufsize >= 1)) {
         strncpy(sp, elem->value, bufsize - 1);
         sp[bufsize - 1] = 0;
     }
@@ -93,8 +99,8 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
 {
     if (!head || list_empty(head))
         return NULL;
-    element_t *elem = list_last_entry(head, element_t, list);
-    if (sp && (bufsize > 1)) {
+    element_t *elem = list_entry(head->prev, element_t, list);
+    if (sp && (bufsize >= 1)) {
         strncpy(sp, elem->value, bufsize - 1);
         sp[bufsize - 1] = 0;
     }
