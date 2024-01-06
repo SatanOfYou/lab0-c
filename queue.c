@@ -80,10 +80,10 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
     if (!head || list_empty(head))
         return NULL;
     element_t *elem = list_first_entry(head, element_t, list);
-    if (sp)
-        memset(sp, 0, bufsize);
-    if (sp && (bufsize > 1))
+    if (sp && (bufsize > 1)) {
         strncpy(sp, elem->value, bufsize - 1);
+        sp[bufsize - 1] = 0;
+    }
     list_del_init(head->next);
     return elem;
 }
@@ -94,10 +94,10 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
     if (!head || list_empty(head))
         return NULL;
     element_t *elem = list_last_entry(head, element_t, list);
-    if (sp)
-        memset(sp, 0, bufsize);
-    if (sp && (bufsize > 1))
+    if (sp && (bufsize > 1)) {
         strncpy(sp, elem->value, bufsize - 1);
+        sp[bufsize - 1] = 0;
+    }
     list_del_init(head->prev);
     return elem;
 }
